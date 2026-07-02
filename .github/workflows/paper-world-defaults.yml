@@ -21,6 +21,7 @@ jobs:
       - name: Download Paper 26.1.2
         run: |
           wget -q https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/72/downloads/paper-1.21.4-72.jar -O paper.jar
+          echo "0555a0b0468a5198d8fb1a16e1f9e95c81a917a2dc8f2e09867b4044742f6401  paper.jar" | sha256sum -c -
           ls -la paper.jar
 
       - name: Generate Configs
