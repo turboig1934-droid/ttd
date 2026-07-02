@@ -18,20 +18,18 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Get Paper Build
-        id: paper
+      - name: Download Paper Direct
         run: |
-          BUILD=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21 | jq -r '.builds[-1]')
-          echo "build=$BUILD" >> $GITHUB_OUTPUT
-
-      - name: Download Paper
-        run: |
-          BUILD=${{ steps.paper.outputs.build }}
-          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21/builds/$BUILD/downloads/paper-1.21-$BUILD.jar -O paper.jar
+          # Latest stable Paper 1.21.4
+          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/latest/downloads/paper-1.21.4-latest.jar -O paper.jar || \
+          wget -q https://papermc.io/api/v2/projects/paper/versions/1.21.3/builds/latest/downloads/paper-1.21.3-latest.jar -O paper.jar || \
+          wget -q https://papermc.io/api/v2/projects/paper/versions/1.21/builds/latest/downloads/paper-1.21-latest.jar -O paper.jar
+          ls -la paper.jar
 
       - name: Generate Configs
         run: |
           java -jar paper.jar --initSettings || true
+          ls -la
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -41,3 +39,4 @@ jobs:
             *.yml
             *.properties
             *.json
+          if-no-files-found: warn
