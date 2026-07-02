@@ -1,7 +1,35 @@
-entities:
-  armor-stands:
-    do-collision-entity-lookups: false
-    tick: false
+name: Paper World Defaults
 
-collisions:
-  max-entity-collisions: 2
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Download Paper
+        run: |
+          wget https://api.papermc.io/v2/projects/paper/versions/1.21/builds/latest/downloads/paper-1.21-latest.jar
+      
+      - name: Generate Default Configs
+        run: |
+          java -jar paper-1.21-latest.jar --initSettings
+      
+      - name: Upload Configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-configs
+          path: |
+            paper-world-defaults.yml
+            server.properties
