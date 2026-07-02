@@ -18,28 +18,25 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
-
-      - name: Get Build Number
-        id: build
+      - name: Get Paper Build
+        id: paper
         run: |
           BUILD=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21 | jq -r '.builds[-1]')
-          echo "number=$BUILD" >> $GITHUB_OUTPUT
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
 
       - name: Download Paper
         run: |
-          BUILD=${{ steps.build.outputs.number }}
-          wget https://api.papermc.io/v2/projects/paper/versions/1.21/builds/$BUILD/downloads/paper-1.21-$BUILD.jar
+          BUILD=${{ steps.paper.outputs.build }}
+          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21/builds/$BUILD/downloads/paper-1.21-$BUILD.jar -O paper.jar
 
       - name: Generate Configs
         run: |
-          java -jar paper-1.21-*.jar --initSettings || true
+          java -jar paper.jar --initSettings || true
 
-      - name: Upload Artifacts
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: configs
+          name: paper-configs
           path: |
             *.yml
             *.properties
