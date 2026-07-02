@@ -16,22 +16,18 @@ jobs:
       checks: write
     
     steps:
-      # Step 1: Checkout Repository
       - name: Checkout code
         uses: actions/checkout@v4
       
-      # Step 2: Setup Java 21
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
       
-      # Step 3: Install jq (JSON processor)
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
       
-      # Step 4: Get latest Paper build
       - name: Get latest Paper build
         id: paper
         run: |
@@ -39,9 +35,7 @@ jobs:
           BUILD=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21 | jq -r '.builds[-1]')
           echo "Latest build: $BUILD"
           echo "build=$BUILD" >> $GITHUB_OUTPUT
-          echo "BUILD=$BUILD" >> $GITHUB_ENV
       
-      # Step 5: Download Paper JAR
       - name: Download Paper
         run: |
           BUILD=${{ steps.paper.outputs.build }}
@@ -49,9 +43,7 @@ jobs:
           wget -q https://api.papermc.io/v2/projects/paper/versions/1.21/builds/$BUILD/downloads/paper-1.21-$BUILD.jar
           mv paper-1.21-$BUILD.jar paper-1.21-latest.jar
           echo "Paper downloaded successfully!"
-          ls -la
       
-      # Step 6: Generate default configs
       - name: Generate Paper Configs
         run: |
           echo "Generating Paper default configs..."
@@ -59,10 +51,8 @@ jobs:
           echo "Config files generated:"
           ls -la *.yml *.properties 2>/dev/null || echo "Checking files..."
       
-      # Step 7: Create configs if missing
       - name: Create default configs
         run: |
-          # Create paper-world-defaults.yml if missing
           if [ ! -f "paper-world-defaults.yml" ]; then
             echo "Creating paper-world-defaults.yml..."
             cat > paper-world-defaults.yml << 'EOF'
@@ -99,7 +89,6 @@ minigames:
 EOF
           fi
           
-          # Create server.properties if missing
           if [ ! -f "server.properties" ]; then
             echo "Creating server.properties..."
             cat > server.properties << 'EOF'
@@ -161,7 +150,6 @@ max-world-size=29999984
 EOF
           fi
       
-      # Step 8: Upload artifacts
       - name: Upload configs as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -180,12 +168,11 @@ EOF
             whitelist.json
           if-no-files-found: warn
       
-      # Step 9: Generate summary
       - name: Generate summary
         run: |
-          echo "# 📦 Paper Configs Generated" >> $GITHUB_STEP_SUMMARY
+          echo "# Paper Configs Generated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## ✅ Successfully generated:" >> $GITHUB_STEP_SUMMARY
+          echo "## Successfully generated:" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| File | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
@@ -197,9 +184,8 @@ EOF
             fi
           done
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📥 Download artifacts from the **Actions** tab" >> $GITHUB_STEP_SUMMARY
+          echo "Download artifacts from the Actions tab" >> $GITHUB_STEP_SUMMARY
       
-      # Step 10: Cleanup
       - name: Cleanup
         run: |
           echo "Cleaning up temporary files..."
