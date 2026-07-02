@@ -18,7 +18,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Download Paper
+      - name: Download Paper from Release
         run: |
           wget -q https://github.com/turboig1934-droid/ttd/releases/download/test/paper-26.1.2-72.1.jar -O paper.jar
           ls -la paper.jar
@@ -26,7 +26,7 @@ jobs:
       - name: Generate Configs
         run: |
           java -jar paper.jar --initSettings || true
-          ls -la
+          ls -la *.yml *.properties *.json 2>/dev/null || echo "Configs generated"
 
       - name: Upload Configs
         uses: actions/upload-artifact@v4
