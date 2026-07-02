@@ -18,12 +18,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Download Paper Direct
+      - name: Download Paper 26.1.2
         run: |
-          # Latest stable Paper 1.21.4
-          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/latest/downloads/paper-1.21.4-latest.jar -O paper.jar || \
-          wget -q https://papermc.io/api/v2/projects/paper/versions/1.21.3/builds/latest/downloads/paper-1.21.3-latest.jar -O paper.jar || \
-          wget -q https://papermc.io/api/v2/projects/paper/versions/1.21/builds/latest/downloads/paper-1.21-latest.jar -O paper.jar
+          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/72/downloads/paper-1.21.4-72.jar -O paper.jar
           ls -la paper.jar
 
       - name: Generate Configs
