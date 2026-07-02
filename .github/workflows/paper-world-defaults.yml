@@ -1,39 +1,21 @@
-name: Paper World Defaults
+name: Minecraft Attack
 
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Manually trigger
 
 jobs:
-  build:
+  attack:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          python-version: '3.10'
 
-      - name: Download Paper from Release
+      - name: Run Attack
         run: |
-          wget -q https://github.com/turboig1934-droid/ttd/releases/download/test/paper-26.1.2-72.1.jar -O paper.jar
-          ls -la paper.jar
-
-      - name: Generate Configs
-        run: |
-          java -jar paper.jar --initSettings || true
-          ls -la *.yml *.properties *.json 2>/dev/null || echo "Configs generated"
-
-      - name: Upload Configs
-        uses: actions/upload-artifact@v4
-        with:
-          name: paper-configs
-          path: |
-            *.yml
-            *.properties
-            *.json
-          if-no-files-found: warn
+          python3 attack.py
