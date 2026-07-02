@@ -18,9 +18,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Download Paper 26.1.2 Build #72
+      - name: Download Paper
         run: |
-          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/72/downloads/paper-1.21.4-72.jar -O paper.jar
+          wget -q https://github.com/turboig1934-droid/ttd/releases/download/test/paper-26.1.2-72.1.jar -O paper.jar
           ls -la paper.jar
 
       - name: Generate Configs
@@ -28,7 +28,7 @@ jobs:
           java -jar paper.jar --initSettings || true
           ls -la
 
-      - name: Upload
+      - name: Upload Configs
         uses: actions/upload-artifact@v4
         with:
           name: paper-configs
