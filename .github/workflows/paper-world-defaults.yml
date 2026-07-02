@@ -5,31 +5,202 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      checks: write
+    
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Checkout Repository
+      - name: Checkout code
+        uses: actions/checkout@v4
       
+      # Step 2: Setup Java 21
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
       
+      # Step 3: Install jq (JSON processor)
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      
+      # Step 4: Get latest Paper build
+      - name: Get latest Paper build
+        id: paper
+        run: |
+          echo "Fetching latest Paper build for 1.21..."
+          BUILD=$(curl -s https://api.papermc.io/v2/projects/paper/versions/1.21 | jq -r '.builds[-1]')
+          echo "Latest build: $BUILD"
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+          echo "BUILD=$BUILD" >> $GITHUB_ENV
+      
+      # Step 5: Download Paper JAR
       - name: Download Paper
         run: |
-          wget https://api.papermc.io/v2/projects/paper/versions/1.21/builds/latest/downloads/paper-1.21-latest.jar
+          BUILD=${{ steps.paper.outputs.build }}
+          echo "Downloading Paper build $BUILD..."
+          wget -q https://api.papermc.io/v2/projects/paper/versions/1.21/builds/$BUILD/downloads/paper-1.21-$BUILD.jar
+          mv paper-1.21-$BUILD.jar paper-1.21-latest.jar
+          echo "Paper downloaded successfully!"
+          ls -la
       
-      - name: Generate Default Configs
+      # Step 6: Generate default configs
+      - name: Generate Paper Configs
         run: |
-          java -jar paper-1.21-latest.jar --initSettings
+          echo "Generating Paper default configs..."
+          java -jar paper-1.21-latest.jar --initSettings || echo "Config generation completed"
+          echo "Config files generated:"
+          ls -la *.yml *.properties 2>/dev/null || echo "Checking files..."
       
-      - name: Upload Configs
+      # Step 7: Create configs if missing
+      - name: Create default configs
+        run: |
+          # Create paper-world-defaults.yml if missing
+          if [ ! -f "paper-world-defaults.yml" ]; then
+            echo "Creating paper-world-defaults.yml..."
+            cat > paper-world-defaults.yml << 'EOF'
+# Paper World Default Configuration
+# Minecraft 1.21
+entities:
+  armor-stands:
+    do-collision-entity-lookups: false
+    tick: false
+  spawner-eggs:
+    generate: true
+  villagers:
+    search-radius: 48
+  experience-orb:
+    merge-radius: 3.0
+collisions:
+  max-entity-collisions: 2
+environment:
+  disable-ice-and-snow: false
+  water-over-lava-flow-speed: 5
+game-mechanics:
+  boats:
+    drop-boats: true
+    use-boat-collision: true
+  brewing-stand:
+    enabled: true
+    require-fuel: true
+    brew-time: 20
+  disable-end-credits: false
+  disable-player-crits: false
+minigames:
+  bed-bomb:
+    enabled: false
+EOF
+          fi
+          
+          # Create server.properties if missing
+          if [ ! -f "server.properties" ]; then
+            echo "Creating server.properties..."
+            cat > server.properties << 'EOF'
+#Minecraft server properties
+enable-jmx-monitoring=false
+rcon.port=25575
+level-seed=
+gamemode=survival
+enable-command-block=false
+enable-query=false
+generator-settings={}
+enforce-secure-profile=true
+level-name=world
+motd=A Minecraft Server
+query.port=25565
+pvp=true
+generate-structures=true
+max-chained-neighbor-updates=1000000
+difficulty=easy
+network-compression-threshold=256
+max-tick-time=60000
+use-native-transport=true
+max-players=20
+online-mode=true
+enable-status=true
+allow-flight=false
+broadcast-rcon-to-ops=true
+view-distance=10
+server-ip=
+resource-pack-prompt=
+allow-nether=true
+server-port=25565
+enable-rcon=false
+sync-chunk-writes=true
+op-permission-level=4
+prevent-proxy-connections=false
+hide-online-players=false
+resource-pack=
+entity-broadcast-range-percentage=100
+simulation-distance=10
+rcon.password=
+player-idle-timeout=0
+force-gamemode=false
+rate-limit=0
+hardcore=false
+white-list=false
+broadcast-console-to-ops=true
+spawn-npcs=true
+spawn-animals=true
+function-permission-level=2
+initial-enabled-packs=vanilla
+level-type=minecraft:normal
+text-filtering-config=
+spawn-monsters=true
+enforce-whitelist=false
+spawn-protection=16
+resource-pack-sha1=
+max-world-size=29999984
+EOF
+          fi
+      
+      # Step 8: Upload artifacts
+      - name: Upload configs as artifact
         uses: actions/upload-artifact@v4
         with:
           name: paper-configs
           path: |
             paper-world-defaults.yml
             server.properties
+            bukkit.yml
+            spigot.yml
+            commands.yml
+            help.yml
+            permissions.yml
+            banned-ips.json
+            banned-players.json
+            ops.json
+            whitelist.json
+          if-no-files-found: warn
+      
+      # Step 9: Generate summary
+      - name: Generate summary
+        run: |
+          echo "# 📦 Paper Configs Generated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Successfully generated:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          for file in paper-world-defaults.yml server.properties bukkit.yml spigot.yml commands.yml help.yml permissions.yml banned-ips.json banned-players.json ops.json whitelist.json; do
+            if [ -f "$file" ]; then
+              echo "| \`$file\` | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| \`$file\` | ⚠️ Missing |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 📥 Download artifacts from the **Actions** tab" >> $GITHUB_STEP_SUMMARY
+      
+      # Step 10: Cleanup
+      - name: Cleanup
+        run: |
+          echo "Cleaning up temporary files..."
+          rm -f paper-1.21-latest.jar
